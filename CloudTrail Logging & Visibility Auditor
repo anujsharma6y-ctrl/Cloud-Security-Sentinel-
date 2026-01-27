@@ -1,0 +1,81 @@
+import json
+import logging
+from datetime import datetime
+
+# # --- Logging Configuration ---
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - [%(levelname)s] - %(message)s'
+)
+
+class VisibilityAuditor:
+    """
+    Audits the logging posture of the AWS environment to ensure 
+    forensic data is being captured.
+    """
+
+    def __init__(self):
+        self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def audit_logging(self, use_mock=True):
+        """
+        Checks if CloudTrail 'Trails' are active and logging 
+        management events.
+        """
+        logging.info("Checking CloudTrail status across regions...")
+
+        if use_mock:
+            # # Mocking CloudTrail status data
+            return [
+                {
+                    "trail_name": "Management-Events-Trail",
+                    "is_multi_region": True,
+                    "status": "Logging",
+                    "s3_bucket": "security-logs-encrypted",
+                    "health": "Healthy"
+                },
+                {
+                    "trail_name": "Shadow-Testing-Trail",
+                    "is_multi_region": False,
+                    "status": "Stopped",
+                    "s3_bucket": "temp-logs",
+                    "health": "Critical"
+                }
+            ]
+        return []
+
+    def format_final_report(self, results):
+        """Generates a professional JSON report of the logging state."""
+        return {
+            "audit_metadata": {
+                "project": "Sentinel-Visibility-Checker",
+                "timestamp": self.timestamp
+            },
+            "findings": results,
+            "overall_status": "Non-Compliant" if any(r['status'] == "Stopped" for r in results) else "Compliant"
+        }
+
+# --- Execution ---
+if __name__ == "__main__":
+    auditor = VisibilityAuditor()
+    
+    # # 1. Run the audit
+    audit_results = auditor.audit_logging(use_mock=True)
+    
+    # # 2. Generate JSON report
+    report = auditor.format_final_report(audit_results)
+    
+    print("\n" + "📡"*30)
+    print("            CLOUDTRAIL VISIBILITY REPORT")
+    print("📡"*30)
+    print(json.dumps(report, indent=4))
+
+    # # 3. Professional Alerts
+    print("\n" + "⚠️" + "-"*15 + " FORENSIC GAPS DETECTED " + "-"*15 + "⚠️")
+    for trail in audit_results:
+        if trail['status'] == "Stopped":
+            logging.error(f"CRITICAL GAP: Trail '{trail['trail_name']}' is NOT LOGGING. Actions are not being recorded!")
+        else:
+            logging.info(f"CONFIRMED: Trail '{trail['trail_name']}' is capturing data.")
+
+    print("📡"*30)
