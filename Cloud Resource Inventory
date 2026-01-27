@@ -1,0 +1,96 @@
+import json
+import logging
+# --- AWS SDK and Security Exception Handlers ---
+import boto3  # Amazon's official library to interact with AWS services
+
+# Importing specific error types to handle authentication failures gracefully
+from botocore.exceptions import (
+    NoCredentialsError,      # Raised when AWS credentials (API Keys) are missing entirely
+    PartialCredentialsError  # Raised when credentials are incomplete or incorrectly configured
+)
+
+# Setting up basic logging configuration
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+class CloudInventory:
+    """
+    A professional tool to discover and catalog AWS resources.
+    Supports both Real-time AWS API and Simulated Mock data.
+    """
+    
+    def __init__(self, use_mock=True, region="us-east-1"):
+        self.use_mock = use_mock
+        self.region = region
+        
+        if not self.use_mock:
+            try:
+                # Initializing real Boto3 clients
+                self.s3_client = boto3.client('s3', region_name=self.region)
+                self.ec2_client = boto3.client('ec2', region_name=self.region)
+                logging.info(f"Connected to Real AWS in region: {self.region}")
+            except Exception as e:
+                logging.error(f"Failed to connect to AWS: {e}")
+                self.use_mock = True  # Fallback to mock if connection fails
+
+    def get_s3_buckets(self):
+        """Discovers all S3 Buckets"""
+        if self.use_mock:
+            return [
+                {"name": "internal-payroll-data", "type": "S3", "status": "Encrypted"},
+                {"name": "public-facing-assets", "type": "S3", "status": "Unencrypted"}
+            ]
+        
+        try:
+            response = self.s3_client.list_buckets()
+            return [{"name": b['Name'], "type": "S3", "created": str(b['CreationDate'])} for b in response['Buckets']]
+        except (NoCredentialsError, PartialCredentialsError):
+            return {"error": "AWS Credentials not found. Please configure your CLI."}
+
+    def get_ec2_instances(self):
+        """Discovers all EC2 Instances"""
+        if self.use_mock:
+            return [
+                {"id": "i-0abc12345", "type": "EC2", "state": "running", "ip": "10.0.1.5"},
+                {"id": "i-0fed98765", "type": "EC2", "state": "stopped", "ip": "N/A"}
+            ]
+        
+        try:
+            response = self.ec2_client.describe_instances()
+            instances = []
+            for reservation in response['Reservations']:
+                for inst in reservation['Instances']:
+                    instances.append({
+                        "id": inst['InstanceId'],
+                        "type": "EC2",
+                        "state": inst['State']['Name'],
+                        "ip": inst.get('PrivateIpAddress', 'N/A')
+                    })
+            return instances
+        except Exception as e:
+            return {"error": str(e)}
+
+    def generate_report(self):
+        """Combines all discovery data into a single JSON report"""
+        inventory = {
+            "metadata": {
+                "scan_time": "2026-01-27", # Actual dynamic time can be added
+                "mode": "Mock" if self.use_mock else "Live",
+                "region": self.region
+            },
+            "resources": self.get_s3_buckets() + self.get_ec2_instances()
+        }
+        return inventory
+
+if __name__ == "__main__":
+    # Change use_mock=False if you have AWS CLI configured with 'aws configure'
+    scanner = CloudInventory(use_mock=True)
+    
+    print("\n" + "="*50)
+    print("🛡️  SENTINEL CLOUD: ASSET DISCOVERY ENGINE")
+    print("="*50 + "\n")
+    
+    final_report = scanner.generate_report()
+    print(json.dumps(final_report, indent=4))
+    
+    print("\n" + "="*50)
+    print(f"✅ Scan Complete. Total Resources: {len(final_report['resources'])}")
