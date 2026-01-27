@@ -1,0 +1,92 @@
+import json
+import logging
+from datetime import datetime
+
+# # --- Logging Configuration ---
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - [%(levelname)s] - %(message)s'
+)
+
+class EC2FirewallAuditor:
+    """
+    Analyzes EC2 Security Group rules to identify high-risk 
+    network exposure.
+    """
+
+    def __init__(self):
+        self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def scan_security_groups(self, use_mock=True):
+        """
+        Scans firewall rules for common vulnerabilities like 
+        open SSH (22) or RDP (3389) ports.
+        """
+        logging.info("Starting Firewall Security Audit...")
+
+        if use_mock:
+            # # Mocking real AWS Security Group (SG) structures
+            return [
+                {
+                    "group_id": "sg-0a123456789",
+                    "group_name": "Web-Server-SG",
+                    "port": 80,
+                    "source": "0.0.0.0/0",
+                    "status": "Safe",
+                    "reason": "Standard HTTP Access"
+                },
+                {
+                    "group_id": "sg-0b987654321",
+                    "group_name": "Admin-Jump-Host",
+                    "port": 22,
+                    "source": "0.0.0.0/0",
+                    "status": "Critical",
+                    "reason": "SSH exposed to the entire internet!"
+                },
+                {
+                    "group_id": "sg-0c555555555",
+                    "group_name": "Database-SG",
+                    "port": 3306,
+                    "source": "10.0.1.5/32",
+                    "status": "Safe",
+                    "reason": "Restricted to internal IP"
+                }
+            ]
+        return []
+
+    def export_report(self, findings):
+        """Wraps findings in a professional JSON audit format."""
+        return {
+            "audit_metadata": {
+                "scanner": "EC2-Firewall-Guard",
+                "run_at": self.timestamp
+            },
+            "vulnerabilities_summary": {
+                "critical_issues": len([f for f in findings if f['status'] == "Critical"]),
+                "total_groups_scanned": len(findings)
+            },
+            "detailed_findings": findings
+        }
+
+# --- Execution ---
+if __name__ == "__main__":
+    auditor = EC2FirewallAuditor()
+    
+    # # 1. Run the audit
+    raw_data = auditor.scan_security_groups(use_mock=True)
+    
+    # # 2. Generate and print JSON report
+    report = auditor.export_report(raw_data)
+    
+    print("\n" + "═"*60)
+    print("            EC2 FIREWALL SECURITY REPORT")
+    print("═"*60)
+    print(json.dumps(report, indent=4))
+
+    # # 3. Trigger  Alerts
+    print("\n" + "!" + "-"*15 + " CRITICAL SECURITY ALERTS " + "-"*15 + "!")
+    for item in raw_data:
+        if item['status'] == "Critical":
+            logging.error(f"VULNERABILITY FOUND: {item['group_name']} ({item['group_id']}) is leaking Port {item['port']}!")
+
+    print("═"*60)
