@@ -1,0 +1,97 @@
+import json   
+import logging
+from datetime import datetime
+
+# # --- Logging Configuration ---
+# Setting up professional logs with timestamps and severity levels
+logging.basicConfig(
+    level=logging.INFO, 
+    format='%(asctime)s - [%(levelname)s] - %(message)s'
+)
+
+class S3Auditor:
+    """
+    S3Auditor class provides methods to scan S3 buckets for 
+    security misconfigurations like public access and missing encryption.
+    """
+
+    def __init__(self, mode="Simulation"):
+        self.mode = mode
+        self.timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    def run_audit(self, use_mock=True):
+        """
+        Performs the security scan. Returns a list of bucket metadata.
+        """
+        logging.info(f"Audit started in {self.mode} mode...")
+
+        if use_mock:
+            # # Mock Data representing real-world S3 metadata scenarios
+            return [
+                {
+                    "bucket_name": "prod-customer-backups",
+                    "access": "Private",
+                    "encryption": "AES-256",
+                    "risk_level": "Low"
+                },
+                {
+                    "bucket_name": "marketing-assets-temp",
+                    "access": "Public",
+                    "encryption": "None",
+                    "risk_level": "Critical"
+                },
+                {
+                    "bucket_name": "internal-audit-logs",
+                    "access": "Public",
+                    "encryption": "AES-256",
+                    "risk_level": "High"
+                }
+            ]
+        
+        # # In a real-world scenario, Boto3 API calls would go here
+        return []
+
+    def generate_report(self, results):
+        """
+        Formats the raw scan results into a structured JSON report.
+        """
+        report = {
+            "metadata": {
+                "tool": "Sentinel S3 Auditor",
+                "scan_time": self.timestamp,
+                "status": "Success"
+            },
+            "summary": {
+                "total_buckets": len(results),
+                "vulnerabilities_found": len([r for r in results if r['access'] == "Public"])
+            },
+            "findings": results
+        }
+        return report
+
+# --- Execution Block ---
+if __name__ == "__main__":
+    # # Initialize the Auditor
+    auditor = S3Auditor(mode="Simulation")
+
+    # # Step 1: Execute Scan
+    raw_findings = auditor.run_audit(use_mock=True)
+
+    # # Step 2: Generate JSON Report
+    final_report = auditor.generate_report(raw_findings)
+
+    # # Step 3: Display Results
+    print("\n" + "="*60)
+    print("S3 SECURITY AUDIT REPORT")
+    print("="*60)
+    print(json.dumps(final_report, indent=4))
+
+    # # Step 4: Security Alerts (Logging Warnings)
+    print("\n" + "-"*15 + " SECURITY ALERTS " + "-"*15)
+    for bucket in raw_findings:
+        if bucket['access'] == "Public":
+            logging.warning(f"EXPOSURE DETECTED: Bucket '{bucket['bucket_name']}' is PUBLIC.")
+        if bucket['encryption'] == "None":
+            logging.error(f"DATA AT RISK: Encryption is missing for '{bucket['bucket_name']}'.")
+    
+    print("="*60)
