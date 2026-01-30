@@ -1,0 +1,71 @@
+import json
+import logging
+from datetime import datetime
+
+# Setup professional logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+class BackupValidator:
+    """
+    Description: Validates Disaster Recovery (DR) and Backup readiness.
+    Goal: Ensure data can be recovered after a Ransomware or accidental deletion event.
+    """
+
+    def __init__(self):
+        self.risk_score = 0
+
+    def validate_backup_jobs(self):
+        """
+        Logic: Scans recent backup jobs for success and encryption status.
+        """
+        logging.info("Starting Backup & Recovery Validation...")
+        
+        # Mocking real-world Backup Vault data
+        # In production: boto3.client('backup').list_backup_jobs()
+        backup_jobs = [
+            {
+                "ResourceName": "Production_DB_RDS",
+                "Status": "COMPLETED",
+                "IsEncrypted": True,
+                "RetentionDays": 30
+            },
+            {
+                "ResourceName": "Critical_App_EBS",
+                "Status": "FAILED",
+                "IsEncrypted": False,
+                "RetentionDays": 0
+            }
+        ]
+
+        validation_report = []
+
+        for job in backup_jobs:
+            if job["Status"] != "COMPLETED" or not job["IsEncrypted"]:
+                self.risk_score += 1
+                
+                # Creating a detailed risk object
+                finding = {
+                    "resource": job["ResourceName"],
+                    "status": job["Status"],
+                    "encryption": "SECURE" if job["IsEncrypted"] else "VULNERABLE",
+                    "severity": "CRITICAL" if job["Status"] == "FAILED" else "HIGH",
+                    "risk": "Data Loss Risk - No recovery point available.",
+                    "remediation": f"Check AWS Backup Plan for {job['ResourceName']} and enable KMS encryption."
+                }
+                validation_report.append(finding)
+        
+        return validation_report
+
+if __name__ == "__main__":
+    validator = BackupValidator()
+    report = validator.validate_backup_jobs()
+
+    print("\n" + "💾" * 15)
+    print("  BACKUP & DISASTER RECOVERY REPORT")
+    print("💾" * 15)
+    
+    if report:
+        print(json.dumps(report, indent=4))
+        logging.error(f"DR AUDIT FAILED: {validator.risk_score} backup risks identified!")
+    else:
+        logging.info("DR AUDIT PASSED: All critical resources have healthy backups.")
