@@ -1,0 +1,52 @@
+import json
+import logging
+from datetime import datetime, timezone
+
+# Professional Logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+class BackupTimeAuditor:
+    """
+    Description: Monitors the exact timestamp of the last successful cloud backup.
+    Goal: Provide precise RPO (Recovery Point Objective) tracking.
+    """
+
+    def __init__(self, rpo_limit_hours=24):
+        self.rpo_limit = rpo_limit_hours
+
+    def audit_backup_timestamp(self, resource_id):
+        logging.info(f"Auditing precise backup timestamp for: {resource_id}")
+
+        # Mocking real AWS API Data (boto3 response)
+        # Using a timestamp from just a few hours ago
+        latest_successful_backup_time = datetime(2026, 1, 30, 8, 30, 0, tzinfo=timezone.utc)
+        
+        # 1. Current Time (UTC)
+        now = datetime.now(timezone.utc)
+
+        # 2. Calculate Gap
+        time_delta = now - latest_successful_backup_time
+        gap_hours = time_delta.total_seconds() / 3600
+
+        # 3. Formatting Time for the Report 
+        # %Y-%m-%d -> Date | %H:%M:%S -> Exact Time
+        readable_time = latest_successful_backup_time.strftime("%Y-%m-%d %H:%M:%S UTC")
+
+        status = "HEALTHY" if gap_hours <= self.rpo_limit else "CRITICAL"
+
+        return {
+            "resource_id": resource_id,
+            "last_backup_timestamp": readable_time,
+            "hours_since_last_backup": round(gap_hours, 2),
+            "compliance_status": status,
+            "message": f"Last backup was completed at {readable_time}."
+        }
+
+if __name__ == "__main__":
+    auditor = BackupTimeAuditor(rpo_limit_hours=12)
+    result = auditor.audit_backup_timestamp("Customer-Database-01")
+
+    print("\n" + "🕒" * 15)
+    print("  DETAILED BACKUP TIME REPORT")
+    print("🕒" * 15)
+    print(json.dumps(result, indent=4))
