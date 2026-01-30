@@ -1,80 +1,55 @@
 import json
+import boto3
 import logging
 from datetime import datetime
 
-# Configure professional logging for audit trails
+# ==========================================
+# MASTER SWITCH
+# ==========================================
+MOCK_MODE = True 
+
 logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
-class MitreThreatMapper:
-    """
-    Description: Maps AWS infrastructure vulnerabilities to the MITRE ATT&CK Framework.
-    Standard: Based on MITRE ATT&CK for Cloud Matrix.
-    """
-    
+class MitreThreatScanner:
     def __init__(self):
-        # Industrial Knowledge Base: Mapping Cloud Risks to MITRE Techniques
+        self.region = "us-east-1"
+        # Aapka MITRE Database (The Brain)
         self.mitre_db = {
-            "S3_PUBLIC_BUCKET": {
-                "technique_id": "T1530",
-                "name": "Data from Cloud Storage Object",
-                "tactic": "Exfiltration",
-                "risk_description": "Sensitive data can be accessed without authentication."
-            },
-            "IAM_USER_WITHOUT_MFA": {
-                "technique_id": "T1078.004",
-                "name": "Valid Accounts: Cloud Accounts",
-                "tactic": "Persistence",
-                "risk_description": "Compromised credentials can provide long-term access."
-            },
-            "EC2_OPEN_SSH_PORT": {
-                "technique_id": "T1190",
-                "name": "Exploit Public-Facing Application",
-                "tactic": "Initial Access",
-                "risk_description": "Brute-force or exploit attempt on port 22."
-            }
+            "S3_PUBLIC_BUCKET": {"id": "T1530", "tactic": "Exfiltration"},
+            "EC2_OPEN_SSH": {"id": "T1190", "tactic": "Initial Access"}
         }
+        if not MOCK_MODE:
+            self.s3 = boto3.client('s3')
 
-    def correlate_findings(self, scan_results):
-        """
-        Logic: Correlates raw scan findings with the MITRE ATT&CK database.
-        """
-        logging.info("Initiating MITRE ATT&CK Correlation Engine...")
-        enriched_report = []
+    def scan_aws(self):
+        """Mera Scanner Logic: Asli data fetch karna"""
+        findings = []
+        if MOCK_MODE:
+            # Fake findings for testing
+            findings.append("S3_PUBLIC_BUCKET")
+        else:
+            # Real Boto3 Logic
+            buckets = self.s3.list_buckets()['Buckets']
+            for b in buckets:
+                # Logic to check if public... (simplified)
+                findings.append("S3_PUBLIC_BUCKET") 
+        return findings
 
-        try:
-            for finding in scan_results:
-                # We check if the finding exists in our MITRE database
-                if finding in self.mitre_db:
-                    mapped_data = {
-                        "finding_id": finding,
-                        "mitre_mapping": self.mitre_db[finding],
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "severity": "HIGH" if self.mitre_db[finding]["tactic"] == "Exfiltration" else "MEDIUM"
-                    }
-                    enriched_report.append(mapped_data)
-                else:
-                    logging.warning(f"Finding '{finding}' not found in MITRE Knowledge Base.")
-
-        except Exception as e:
-            logging.error(f"Critical Error during correlation: {e}")
-        
-        return enriched_report
-
+    def enrich_with_mitre(self, scan_results):
+        """Aapka Mapper Logic: Findings ko MITRE se jodna"""
+        enriched = []
+        for issue in scan_results:
+            if issue in self.mitre_db:
+                enriched.append({
+                    "issue": issue,
+                    "mitre_info": self.mitre_db[issue],
+                    "timestamp": datetime.now().strftime("%Y-%m-%d")
+                })
+        return enriched
 
 if __name__ == "__main__":
-    # Simulated input from other scanners (e.g., S3 or IAM Scanner)
-    raw_findings = ["S3_PUBLIC_BUCKET", "IAM_USER_WITHOUT_MFA", "UNRECOGNIZED_ISSUE"]
-
-    mapper = MitreThreatMapper()
-    final_report = mapper.correlate_findings(raw_findings)
-
-    # Output results as a  JSON report
-    print("\n" + "="*50)
-    print("MITRE ATT&CK ENRICHED SECURITY REPORT")
-    print("="*50)
-    print(json.dumps(final_report, indent=4))
+    scanner = MitreThreatScanner()
+    raw_data = scanner.scan_aws() # Step 1: Scan (Mera kaam)
+    final_report = scanner.enrich_with_mitre(raw_data) # Step 2: Map (Aapka kaam)
     
-    # Save the report to a file
-    with open("mitre_security_audit.json", "w") as report_file:
-        json.dump(final_report, report_file, indent=4)
-        logging.info("Professional report saved as 'mitre_security_audit.json'")
+    print(json.dumps(final_report, indent=4))
