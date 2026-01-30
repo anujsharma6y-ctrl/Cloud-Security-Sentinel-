@@ -86,11 +86,32 @@ Key Features: Inspects Bucket Policies and Access Control Lists (ACLs) for expos
 
 Impact: Prevents data breaches caused by misconfigured cloud storage.
 
-🛠️ Tech Stack & Standards
-Language: Python 3.13
 
-SDK: Boto3 (AWS SDK)
+/Cloud-Security-Automation-Suite
+├── 01_CIS_Compliance_Checker/       # Global Standard Hardening (v1.4.0)
+├── 02_Attack_Surface_Mapper/        # External Exposure & Port Analysis
+├── 03_Backup_DR_Validator/          # Recovery Readiness & KMS Audit
+├── 04_Backup_Recency_Monitor/       # RPO (Recovery Point Objective) Tracking
+├── 05_Resource_Inventory_Scanner/   # Asset Visibility & Shadow IT Discovery
+├── 06_CloudTrail_Visibility_Audit/  # Management Event & Audit Trail Verification
+├── 07_EC2_Security_Group_Auditor/   # Network Firewall & Ingress Risk Analysis
+├── 08_Forensic_Logging_Checker/     # VPC Flow Logs & Network Traceability
+├── 09_IAM_Identity_Auditor/         # MFA, Key Age & Credential Hygiene
+├── 10_IAM_Privilege_Detector/       # Overly Permissive & Wildcard (*) Policy Audit
+├── 11_MITRE_ATT&CK_Mapper/          # Threat Context & Tactic Correlation
+└── 12_S3_Public_Access_Scanner/     # Data Leakage & Bucket Policy Auditor
+🛠️ Tech Stack
+Language: Python 3.10+
 
-Security Frameworks: MITRE ATT&CK, CIS Foundations Benchmark
+SDK: boto3 (AWS SDK for Python)
+
+Core Libraries: json, logging, datetime, botocore
+
+Standards: MITRE ATT&CK for Cloud, CIS AWS Foundations Benchmark
 
 Compliance: HIPAA, SOC2, and PCI-DSS Readiness
+
+Environment: AWS Cloud (IAM, S3, EC2, CloudTrail, AWS Backup)
+
+👨‍💻 Author
+Anuj Sharma Cloud Security Automation Enthusiast | DevSecOps Specialist | Python & Boto3 Expert
