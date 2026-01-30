@@ -1,0 +1,56 @@
+import json
+import logging
+
+# Professional Logging for Audit Trail
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+class LoggingComplianceAuditor:
+    """
+    Description: Audits the AWS account for Forensic Logging Readiness.
+    Goal: Ensure all 'CCTV' (Logs) are active for Incident Response.
+    """
+
+    def __init__(self):
+        self.compliance_gap_found = False
+
+    def check_logging_status(self):
+        """
+        Logic: Verifies if critical logging services are ACTIVE.
+        """
+        logging.info("Starting Forensic Logging Compliance Check...")
+        
+        # Mocked real-world API response structure
+        # In production, use: boto3.client('cloudtrail').describe_trails()
+        audit_checks = {
+            "CloudTrail_Global": {"status": "ENABLED", "encrypted": True},
+            "VPC_Flow_Logs_US_EAST": {"status": "DISABLED", "risk": "Network Blindness"},
+            "S3_Data_Events": {"status": "DISABLED", "risk": "No visibility on data theft"}
+        }
+
+        compliance_report = []
+
+        for service, details in audit_checks.items():
+            if details["status"] == "DISABLED":
+                self.compliance_gap_found = True
+                finding = {
+                    "service": service,
+                    "compliance_status": "NON_COMPLIANT",
+                    "severity": "HIGH",
+                    "impact": details.get("risk", "Unknown Risk"),
+                    "recommendation": f"Enable {service} immediately to ensure forensic traceability."
+                }
+                compliance_report.append(finding)
+        
+        return compliance_report
+
+if __name__ == "__main__":
+    auditor = LoggingComplianceAuditor()
+    report = auditor.check_logging_status()
+
+    print("\n" + "="*60)
+    print("🛡️  FORENSIC LOGGING COMPLIANCE REPORT")
+    print("="*60)
+    print(json.dumps(report, indent=4))
+
+    if auditor.compliance_gap_found:
+        logging.error("SECURITY ALERT: Significant logging gaps detected. Incident Response is compromised!")
