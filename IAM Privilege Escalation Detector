@@ -1,0 +1,70 @@
+import json
+import logging
+
+# Setup professional logging for security auditing
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+
+class IAMSecurityAuditor:
+    """Description: Audits IAM policies to detect 'Overly Permissive' permissions.
+    Standard: Follows the Principle of Least Privilege (PoLP)."""
+
+    def __init__(self):
+        self.critical_findings_count = 0
+
+    def audit_policy_document(self, user_name, policy_doc):
+        """
+        Logic: Scans policy statements for Wildcard (*) usage in Actions and Resources.
+        """
+        logging.info(f"Analyzing IAM Policy for User: {user_name}")
+        findings = []
+        
+        # Accessing the 'Statement' block of the AWS Policy JSON
+        statements = policy_doc.get("Statement", [])
+
+        for statement in statements:
+            # Check for the 'Full Admin' pattern
+            is_allow = statement.get("Effect") == "Allow"
+            has_star_action = statement.get("Action") == "*"
+            has_star_resource = statement.get("Resource") == "*"
+
+            if is_allow and has_star_action and has_star_resource:
+                self.critical_findings_count += 1
+                
+                # Create a professional vulnerability object
+                issue = {
+                    "severity": "CRITICAL",
+                    "issue_type": "Privilege Escalation Risk",
+                    "description": f"User '{user_name}' has Full Administrator access via Wildcards (*).",
+                    "mitigation": "Replace '*' with specific IAM actions (e.g., s3:GetObject) and specific ARNs."
+                }
+                findings.append(issue)
+        
+        return findings
+
+# --- Standalone Execution Block ---
+if __name__ == "__main__":
+    # Mocking a dangerous IAM Policy (The kind hackers love)
+    dangerous_policy = {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Effect": "Allow",
+                "Action": "*",
+                "Resource": "*"
+            }
+        ]
+    }
+
+    auditor = IAMSecurityAuditor()
+    report = auditor.audit_policy_document("Developer_Alpha", dangerous_policy)
+
+    # Final Output Report
+    print("\n" + "="*50)
+    print("IAM SECURITY AUDIT REPORT")
+    print("="*50)
+    
+    if report:
+        print(json.dumps(report, indent=4))
+        logging.error(f"AUDIT FAILED: {auditor.critical_findings_count} Critical Misconfigurations Found!")
+    else:
+        logging.info("AUDIT PASSED: No broad wildcard policies detected.")
